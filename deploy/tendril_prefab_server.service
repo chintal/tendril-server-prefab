@@ -1,0 +1,17 @@
+
+[Unit]
+Description=Tendril FS Server
+
+[Service]
+ExecStart=/usr/bin/twistd --nodaemon --pidfile= fs_server.tac
+
+WorkingDirectory=/home/tendril/tools/fs_server/deploy
+
+User=tendril
+Group=tendril
+
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+
