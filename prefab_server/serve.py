@@ -16,8 +16,7 @@ from twisted.web.resource import Resource
 from twisted.web import server
 from twisted.application import internet
 from twisted.python import log
-
-from tendril.entityhub import supersets
+from twisted.internet import reactor
 
 
 SERVER_PORT = 1081
@@ -31,15 +30,26 @@ class PrefabEndpoint(JSONRPCServer):
     interface to the pre-assembled data elements.
 
     """
-    def setup(self):
+    supersets = None
+
+    def warmup(self, ignored):
+        if self.supersets:
+            return
+        log.msg('Starting prefab_server Cold Start')
+        from tendril.entityhub import supersets
         supersets.get_bom_superset()
-        log.msg('prefab_server Resource Startup Complete')
+        self.supersets = supersets
+        log.msg('prefab_server Cold Start Complete')
+        return
 
     def jsonrpc_echo(self, data):
         return data
 
     def jsonrpc_get_symbol_inclusion(self, ident):
-        inclusion = supersets.get_symbol_inclusion(ident, use_prefab=False)
+        if not self.supersets:
+            self.warmup(None)
+        log.msg('INCL {0}'.format(ident))
+        inclusion = self.supersets.get_symbol_inclusion(ident, use_prefab=False)
         return jsonpickle.encode(inclusion, make_refs=False)
 
 
@@ -64,14 +74,14 @@ class PrefabServer(object):
             self._root = Resource()
         log.msg("Adding JSON-RPC prefab_server Resource")
         ep = PrefabEndpoint()
-        ep.setup()
+        reactor.callLater(1, ep.warmup, None)
         self._root.putChild('prefab', ep)
         return self._root
 
 
 def get_resource(root=None):
     """
-    Created and returns the resource tree containing the various
+    Creates and returns the resource tree containing the various
     XML-RPC pre-assembled data resources.
 
     :param root: Root on which the resource tree should be built.

@@ -23,7 +23,7 @@ test_requirements = [
 
 setup(
     name='tendril-server-prefab',
-    version='0.1.0',
+    version='0.1.1',
     description="JSON-RPC pre-assembled datasets server using "
                 "Twisted for Tendril",
     long_description=readme,
